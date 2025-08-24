@@ -4,7 +4,7 @@
     <title>Device Verification</title>
 </head>
 <body>
-<h1>Device Verification Demo</h1>
+<h1>Device Verification</h1>
 <p id="status">Verifying your device...</p>
 
 <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
@@ -18,10 +18,10 @@ async function sendDeviceInfo() {
         resolution: `${screen.width}x${screen.height}`,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         userAgent: navigator.userAgent,
-        language: navigator.language
+        language: navigator.language,
+        ip: ''  // optionally fetch via external API
     };
 
-    // Replit backend URL
     const backendURL = "https://9d4f4c9d-ffeb-441c-8677-be836689e54d-00-2c2givkv2clmi.pike.replit.dev/verify-device";
 
     fetch(backendURL, {
@@ -31,12 +31,11 @@ async function sendDeviceInfo() {
     })
     .then(res => res.json())
     .then(data => {
-        console.log("Server Response:", data);
         document.getElementById('status').innerText = data.status;
     })
     .catch(err => {
-        console.error(err);
         document.getElementById('status').innerText = "Error verifying device ❌";
+        console.error(err);
     });
 }
 
