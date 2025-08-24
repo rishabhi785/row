@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Device Verification</title>
+</head>
+<body>
+<h1>Device Verification Demo</h1>
+<p id="status">Verifying your device...</p>
+
+<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+<script>
+async function sendDeviceInfo() {
+    const fp = await FingerprintJS.load();
+    const result = await fp.get();
+
+    const deviceData = {
+        fingerprint: result.visitorId,
+        resolution: `${screen.width}x${screen.height}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        userAgent: navigator.userAgent,
+        language: navigator.language
+    };
+
+    // Backend URL
+    const backendURL = "https://9d4f4c9d-ffeb-441c-8677-be836689e54d-00-2c2givkv2clmi.pike.replit.dev/verify-device";
+
+    fetch(backendURL, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(deviceData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("Server Response:", data);
+        document.getElementById('status').innerText = data.status;
+    })
+    .catch(err => {
+        console.error(err);
+        document.getElementById('status').innerText = "Error verifying device ❌";
+    });
+}
+
+sendDeviceInfo();
+</script>
+</body>
+</html>
