@@ -4,7 +4,7 @@
     <title>Device Verification</title>
 </head>
 <body>
-<h1>Device Verification Demo</h1>
+<h1>Device Verification</h1>
 <p id="status">Verifying your device...</p>
 
 <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
@@ -21,7 +21,7 @@ async function sendDeviceInfo() {
         language: navigator.language
     };
 
-    // Backend URL
+    // Replit backend URL
     const backendURL = "https://9d4f4c9d-ffeb-441c-8677-be836689e54d-00-2c2givkv2clmi.pike.replit.dev/verify-device";
 
     fetch(backendURL, {
