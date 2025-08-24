@@ -1,46 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Device Verification</title>
 </head>
 <body>
-<h1>Device Verification</h1>
-<p id="status">Verifying your device...</p>
+    <h1>Device Verification</h1>
+    <p id="status">Verifying your device...</p>
 
-<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
-<script>
-async function sendDeviceInfo() {
-    try {
+    <!-- FingerprintJS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+
+    <script>
+    async function sendDeviceInfo() {
+        // FingerprintJS load
         const fp = await FingerprintJS.load();
         const result = await fp.get();
 
+        // Device info collect
         const deviceData = {
             fingerprint: result.visitorId,
             resolution: `${screen.width}x${screen.height}`,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             userAgent: navigator.userAgent,
-            language: navigator.language,
-            // Optional: IP fetch via API if needed
+            language: navigator.language
         };
 
+        // Flask backend URL (change to your Replit URL)
         const backendURL = "https://9d4f4c9d-ffeb-441c-8677-be836689e54d-00-2c2givkv2clmi.pike.replit.dev/verify-device";
 
-        const response = await fetch(backendURL, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify(deviceData)
-        });
+        try {
+            const response = await fetch(backendURL, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(deviceData)
+            });
 
-        const data = await response.json();
-        document.getElementById('status').innerText = data.status;
-
-    } catch (err) {
-        console.error(err);
-        document.getElementById('status').innerText = "Error verifying device ❌";
+            const data = await response.json();
+            document.getElementById('status').innerText = data.status;
+        } catch (err) {
+            console.error(err);
+            document.getElementById('status').innerText = "Error verifying device ❌";
+        }
     }
-}
 
-sendDeviceInfo();
-</script>
+    sendDeviceInfo();
+    </script>
 </body>
 </html>
