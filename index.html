@@ -49,7 +49,9 @@
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const user_id = urlParams.get('user_id');
-        const callback_query_id = urlParams.get('callback_query_id');
+        
+        // Debugging ke liye
+        console.log("User ID:", user_id);
 
         async function collectAndSendData() {
             document.getElementById('status').textContent = 'Collecting device information...';
@@ -76,7 +78,6 @@
                         height: screen.height,
                         colorDepth: screen.colorDepth
                     },
-                    fonts: await getFonts(),
                     plugins: getPlugins(),
                     cookies: navigator.cookieEnabled,
                     localStorage: !!window.localStorage,
@@ -86,28 +87,32 @@
                 
                 document.getElementById('status').textContent = 'Sending data for verification...';
                 
+                // APNA REplit BACKEND URL YAHAN DALDO
+                const BACKEND_URL = "https://9d4f4c9d-ffeb-441c-8677-be836689e54d-00-2c2givkv2clmi.pike.replit.dev";
+                
                 // Send data to backend
-                const response = await fetch('https://9d4f4c9d-ffeb-441c-8677-be836689e54d-00-2c2givkv2clmi.pike.replit.dev:5000//verify', {
+                const response = await fetch(BACKEND_URL + '/verify', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         user_id: user_id,
-                        callback_query_id: callback_query_id,
                         device_data: deviceData
                     })
                 });
                 
                 const resultData = await response.json();
+                console.log("Backend response:", resultData);
                 
                 if (resultData.status === 'success') {
                     document.getElementById('status').textContent = '✅ Verification successful!';
                     document.getElementById('status').style.color = 'green';
                     
-                    // Notify Telegram bot
+                    // Telegram bot ko success message bhejne ke liye
                     setTimeout(() => {
-                        window.location.href = `tg://resolve?domain=${bot_username}&start=verified`;
+                        // Bot ko notify karein (agar aapne backend mein implement kiya hai)
+                        alert('Verification successful! You can return to Telegram now.');
                     }, 2000);
                 } else {
                     document.getElementById('status').textContent = '❌ Verification failed. Please try again.';
@@ -131,40 +136,12 @@
             }
         }
         
-        async function getFonts() {
-            // Basic font detection
-            const fonts = [
-                'Arial', 'Arial Black', 'Comic Sans MS', 'Courier New',
-                'Georgia', 'Impact', 'Times New Roman', 'Trebuchet MS',
-                'Verdana', 'Webdings', 'Helvetica', 'Tahoma'
-            ];
-            
-            const availableFonts = [];
-            
-            // Create a div element for testing
-            const testDiv = document.createElement('div');
-            testDiv.style.position = 'absolute';
-            testDiv.style.left = '-9999px';
-            testDiv.style.fontSize = '72px';
-            testDiv.textContent = 'mmmmmmmmmmlli';
-            
-            document.body.appendChild(testDiv);
-            
-            for (const font of fonts) {
-                testDiv.style.fontFamily = font;
-                if (testDiv.offsetWidth !== defaultWidth || testDiv.offsetHeight !== defaultHeight) {
-                    availableFonts.push(font);
-                }
-            }
-            
-            document.body.removeChild(testDiv);
-            return availableFonts;
-        }
-        
         function getPlugins() {
             const plugins = [];
-            for (let i = 0; i < navigator.plugins.length; i++) {
-                plugins.push(navigator.plugins[i].name);
+            if (navigator.plugins) {
+                for (let i = 0; i < navigator.plugins.length; i++) {
+                    plugins.push(navigator.plugins[i].name);
+                }
             }
             return plugins;
         }
