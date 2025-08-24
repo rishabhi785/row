@@ -2,46 +2,172 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Device Verification</title>
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3.4.0/dist/fp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #006699;
+        }
+        .status {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <h1>Device Verification</h1>
-    <p id="status">Verifying your device...</p>
-    <pre id="device-info"></pre>
-
-    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+    <div class="container">
+        <h1>Device Verification</h1>
+        <p>Click the button below to verify your device.</p>
+        <button onclick="collectAndSendData()">Verify My Device</button>
+        <div id="status" class="status"></div>
+    </div>
 
     <script>
-    async function sendDeviceInfo() {
-        const fp = await FingerprintJS.load();
-        const result = await fp.get();
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const user_id = urlParams.get('user_id');
+        const callback_query_id = urlParams.get('callback_query_id');
 
-        const deviceData = {
-            fingerprint: result.visitorId,
-            resolution: `${screen.width}x${screen.height}`,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            userAgent: navigator.userAgent,
-            language: navigator.language
-        };
-
-        const backendURL = "https://9d4f4c9d-ffeb-441c-8677-be836689e54d-00-2c2givkv2clmi.pike.replit.dev:3000//verify-device";
-
-        try {
-            const response = await fetch(backendURL, {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify(deviceData)
-            });
-            const data = await response.json();
-            document.getElementById('status').innerText = data.status;
-            document.getElementById('device-info').innerText = JSON.stringify(data.data, null, 2);
-        } catch(err) {
-            console.error(err);
-            document.getElementById('status').innerText = "Error verifying device ❌";
+        async function collectAndSendData() {
+            document.getElementById('status').textContent = 'Collecting device information...';
+            
+            try {
+                // Initialize FingerprintJS
+                const fpPromise = FingerprintJS.load();
+                const fp = await fpPromise;
+                const result = await fp.get();
+                
+                // Collect device information
+                const deviceData = {
+                    fingerprint: result.visitorId,
+                    browser: {
+                        name: navigator.userAgent,
+                        language: navigator.language,
+                        platform: navigator.platform,
+                        userAgent: navigator.userAgent
+                    },
+                    ip: await getIPAddress(),
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    screen: {
+                        width: screen.width,
+                        height: screen.height,
+                        colorDepth: screen.colorDepth
+                    },
+                    fonts: await getFonts(),
+                    plugins: getPlugins(),
+                    cookies: navigator.cookieEnabled,
+                    localStorage: !!window.localStorage,
+                    sessionStorage: !!window.sessionStorage,
+                    time: new Date().toISOString()
+                };
+                
+                document.getElementById('status').textContent = 'Sending data for verification...';
+                
+                // Send data to backend
+                const response = await fetch('https://9d4f4c9d-ffeb-441c-8677-be836689e54d-00-2c2givkv2clmi.pike.replit.dev:5000//verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: user_id,
+                        callback_query_id: callback_query_id,
+                        device_data: deviceData
+                    })
+                });
+                
+                const resultData = await response.json();
+                
+                if (resultData.status === 'success') {
+                    document.getElementById('status').textContent = '✅ Verification successful!';
+                    document.getElementById('status').style.color = 'green';
+                    
+                    // Notify Telegram bot
+                    setTimeout(() => {
+                        window.location.href = `tg://resolve?domain=${bot_username}&start=verified`;
+                    }, 2000);
+                } else {
+                    document.getElementById('status').textContent = '❌ Verification failed. Please try again.';
+                    document.getElementById('status').style.color = 'red';
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('status').textContent = 'An error occurred. Please try again.';
+                document.getElementById('status').style.color = 'red';
+            }
         }
-    }
-
-    sendDeviceInfo();
+        
+        async function getIPAddress() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                return 'Unknown';
+            }
+        }
+        
+        async function getFonts() {
+            // Basic font detection
+            const fonts = [
+                'Arial', 'Arial Black', 'Comic Sans MS', 'Courier New',
+                'Georgia', 'Impact', 'Times New Roman', 'Trebuchet MS',
+                'Verdana', 'Webdings', 'Helvetica', 'Tahoma'
+            ];
+            
+            const availableFonts = [];
+            
+            // Create a div element for testing
+            const testDiv = document.createElement('div');
+            testDiv.style.position = 'absolute';
+            testDiv.style.left = '-9999px';
+            testDiv.style.fontSize = '72px';
+            testDiv.textContent = 'mmmmmmmmmmlli';
+            
+            document.body.appendChild(testDiv);
+            
+            for (const font of fonts) {
+                testDiv.style.fontFamily = font;
+                if (testDiv.offsetWidth !== defaultWidth || testDiv.offsetHeight !== defaultHeight) {
+                    availableFonts.push(font);
+                }
+            }
+            
+            document.body.removeChild(testDiv);
+            return availableFonts;
+        }
+        
+        function getPlugins() {
+            const plugins = [];
+            for (let i = 0; i < navigator.plugins.length; i++) {
+                plugins.push(navigator.plugins[i].name);
+            }
+            return plugins;
+        }
     </script>
 </body>
 </html>
