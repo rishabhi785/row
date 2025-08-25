@@ -191,6 +191,33 @@
             border-radius: 10px;
             margin: 20px 0;
         }
+        
+        .warning-message {
+            color: #856404;
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .bot-instruction {
+            background: #e7f5ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .bot-instruction h3 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+        
+        .bot-instruction p {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -209,6 +236,26 @@
             <div class="error-message" id="errorText"></div>
             <button class="continue-btn" onclick="location.reload()">
                 <i class="fas fa-refresh"></i> Try Again
+            </button>
+        </div>
+        
+        <!-- Warning Screen (for device limit or same device cases) -->
+        <div id="warningScreen" class="hidden">
+            <div class="logo" style="background: #ffc107;">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <h1>Verification Warning</h1>
+            <div class="warning-message" id="warningText"></div>
+            
+            <div class="bot-instruction">
+                <h3>Next Steps:</h3>
+                <p>1. Return to Telegram bot</p>
+                <p>2. Check your messages for detailed information</p>
+                <p>3. Contact support if this is an error</p>
+            </div>
+            
+            <button class="continue-btn" onclick="continueToBot()">
+                <i class="fas fa-robot"></i> Return to Bot
             </button>
         </div>
 
@@ -258,6 +305,13 @@
                     <span class="info-value" id="timezoneInfo">Loading...</span>
                 </div>
             </div>
+            
+            <div class="bot-instruction">
+                <h3>Next Steps:</h3>
+                <p>1. Return to Telegram bot</p>
+                <p>2. Check your messages for verification confirmation</p>
+                <p>3. You can now use all bot features</p>
+            </div>
 
             <button class="continue-btn" onclick="continueToBot()">
                 <i class="fas fa-robot"></i> Continue to Bot
@@ -282,15 +336,27 @@
         const scanningScreen = document.getElementById('scanningScreen');
         const successScreen = document.getElementById('successScreen');
         const errorScreen = document.getElementById('errorScreen');
+        const warningScreen = document.getElementById('warningScreen');
         const errorText = document.getElementById('errorText');
+        const warningText = document.getElementById('warningText');
         
+        // Updated backend URL
         const BACKEND_URL = "https://9d4f4c9d-ffeb-441c-8677-be836689e54d-00-2c2givkv2clmi.pike.replit.dev";
 
         function showError(message) {
             scanningScreen.classList.add('hidden');
             successScreen.classList.add('hidden');
+            warningScreen.classList.add('hidden');
             errorScreen.classList.remove('hidden');
             errorText.textContent = message;
+        }
+        
+        function showWarning(message) {
+            scanningScreen.classList.add('hidden');
+            successScreen.classList.add('hidden');
+            errorScreen.classList.add('hidden');
+            warningScreen.classList.remove('hidden');
+            warningText.textContent = message;
         }
 
         function updateProgress(percent, message) {
@@ -301,6 +367,8 @@
         function showSuccessScreen(deviceData) {
             scanningScreen.classList.add('hidden');
             successScreen.classList.remove('hidden');
+            errorScreen.classList.add('hidden');
+            warningScreen.classList.add('hidden');
 
             // Display device information
             document.getElementById('deviceId').textContent = deviceData.fingerprint.substring(0, 16) + '...';
@@ -310,7 +378,8 @@
         }
 
         function continueToBot() {
-            window.location.href = "https://t.me/your_bot_username";
+            // Close the window or redirect
+            window.close();
         }
 
         async function getIPAddress() {
@@ -346,7 +415,8 @@
                     browser: navigator.userAgent,
                     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                     screen: `${screen.width}x${screen.height}`,
-                    language: navigator.language
+                    language: navigator.language,
+                    userAgent: navigator.userAgent
                 };
 
                 updateProgress(75, "Sending for verification...");
@@ -367,7 +437,8 @@
                 console.log("Response status:", response.status);
 
                 if (!response.ok) {
-                    throw new Error(`Server error! status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Server error! status: ${response.status}`);
                 }
 
                 const resultData = await response.json();
@@ -378,6 +449,9 @@
                     setTimeout(() => {
                         showSuccessScreen(deviceData);
                     }, 1000);
+                } else if (resultData.status === 'failed') {
+                    // Show warning for device limit or same device cases
+                    showWarning(resultData.message || "Device verification failed. Please check your Telegram bot for details.");
                 } else {
                     throw new Error(resultData.message || "Verification failed");
                 }
